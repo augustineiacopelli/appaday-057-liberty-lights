@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Liberty Lights | AppADay 057</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-top:#04060f;
+    --sky-horizon:#0d1b3f;
+    --gold:#d4af37;
+    --gold-bright:#f4cf65;
+    --red:#b31942;
+    --blue:#0a3161;
+    --white:#f5f5f0;
+    --panel-bg:rgba(6,10,22,0.78);
+    --panel-border:rgba(212,175,55,0.35);
+    --text-dim:rgba(245,245,240,0.6);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;background:var(--sky-top);overflow:hidden;}
+  body{
+    min-height:100dvh;
+    display:flex;
+    flex-direction:column;
+    font-family:'Space Grotesk',sans-serif;
+    color:var(--white);
+  }
+  #app{display:flex;flex-direction:column;min-height:100dvh;width:100%;}
+
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:10px 14px;background:var(--panel-bg);
+    border-bottom:1px solid var(--panel-border);
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    z-index:5;flex-wrap:wrap;
+  }
+  .back{color:var(--gold-bright);text-decoration:none;font-size:12px;font-weight:600;letter-spacing:.03em;white-space:nowrap;}
+  .back:focus-visible{outline:2px solid var(--gold);outline-offset:3px;}
+  .title-block{text-align:center;flex:1;min-width:150px;}
+  .title-block h1{
+    font-family:'Big Shoulders Display',sans-serif;font-weight:900;
+    font-size:22px;letter-spacing:.04em;margin:0;line-height:1;
+  }
+  .title-block .tagline{margin:2px 0 0;font-size:10px;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;}
+  .badge{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;
+    background:rgba(212,175,55,0.12);border:1px solid var(--panel-border);
+    border-radius:999px;padding:6px 10px;color:var(--gold-bright);white-space:nowrap;
+  }
+
+  .sky-wrap{position:relative;flex:1;min-height:0;}
+  #sky{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;}
+  .hint{
+    position:absolute;left:50%;bottom:18px;transform:translateX(-50%);
+    font-size:13px;letter-spacing:.04em;color:var(--text-dim);
+    background:rgba(6,10,22,0.5);padding:8px 14px;border-radius:999px;
+    border:1px solid var(--panel-border);pointer-events:none;
+    transition:opacity .5s ease;white-space:nowrap;
+  }
+  .hint.hidden{opacity:0;}
+
+  .controls{
+    background:var(--panel-bg);border-top:1px solid var(--panel-border);
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom));z-index:5;
+  }
+  .type-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+  .type-row::-webkit-scrollbar{display:none;}
+  .chip{
+    flex:0 0 auto;display:flex;align-items:center;gap:6px;
+    background:rgba(255,255,255,0.05);border:1px solid var(--panel-border);
+    color:var(--white);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:500;
+    padding:9px 13px;border-radius:999px;cursor:pointer;white-space:nowrap;
+  }
+  .chip .dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:0 0 auto;}
+  .chip.active{background:rgba(212,175,55,0.18);border-color:var(--gold);color:var(--gold-bright);}
+  .chip:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+
+  .action-row{display:flex;gap:8px;}
+  .action-btn{
+    flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--panel-border);
+    color:var(--white);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;
+    padding:11px 8px;border-radius:10px;cursor:pointer;
+  }
+  .action-btn.on{background:rgba(212,175,55,0.2);border-color:var(--gold);color:var(--gold-bright);}
+  .action-btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+  .action-btn:disabled{opacity:.35;cursor:not-allowed;}
+
+  .dot-random{background:conic-gradient(#b31942,#f4cf65,#0a3161,#f5f5f0,#d4af37,#b31942);}
+
+  .show-row{
+    display:flex;gap:8px;overflow-x:auto;padding-top:8px;margin-top:8px;
+    border-top:1px solid var(--panel-border);scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+  }
+  .show-row::-webkit-scrollbar{display:none;}
+  .show-row .action-btn{flex:0 0 auto;padding:10px 14px;}
+
+  @media (max-width:420px){
+    .title-block h1{font-size:18px;}
+    .badge{font-size:10px;padding:5px 8px;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <a class="back" href="https://augustineiacopelli.github.io/appaday/">&larr; AppADay</a>
+    <div class="title-block">
+      <h1>057 &middot; Liberty Lights</h1>
+      <p class="tagline">Fireworks for America's 250th</p>
+    </div>
+    <div class="badge" id="countdownBadge">Loading&hellip;</div>
+  </header>
+
+  <main class="sky-wrap" id="skyWrap">
+    <canvas id="sky"></canvas>
+    <div class="hint" id="hint">Tap the sky to launch a firework</div>
+  </main>
+
+  <footer class="controls">
+    <div class="type-row" id="typeRow">
+      <button class="chip active" data-type="peony"><span class="dot" style="background:#d4af37;"></span>Peony</button>
+      <button class="chip" data-type="willow"><span class="dot" style="background:#dfe8ff;"></span>Willow</button>
+      <button class="chip" data-type="chrysanthemum"><span class="dot" style="background:#5b7fff;"></span>Chrysanthemum</button>
+      <button class="chip" data-type="ring"><span class="dot" style="background:#ff3b5c;"></span>Liberty Ring</button>
+      <button class="chip" data-type="palm"><span class="dot" style="background:#ff8a00;"></span>Freedom Palm</button>
+      <button class="chip" data-type="salute"><span class="dot" style="background:linear-gradient(#b31942,#0a3161);"></span>&#9733; 250 Salute</button>
+      <button class="chip" data-type="random"><span class="dot dot-random"></span>&#127922; Random Mix</button>
+    </div>
+    <div class="action-row">
+      <button class="action-btn" id="autoBtn">Auto Show: Off</button>
+      <button class="action-btn on" id="soundBtn">Sound: On</button>
+      <button class="action-btn" id="clearBtn">Clear Sky</button>
+    </div>
+    <div class="show-row" id="showRow">
+      <button class="action-btn" id="recordBtn">&#9679; Record Show</button>
+      <button class="action-btn" id="playBtn" disabled>&#9654; Play Show</button>
+      <button class="action-btn" id="saveBtn" disabled>&#8681; Save Show</button>
+      <button class="action-btn" id="loadBtn">&#8679; Load Show</button>
+      <input type="file" id="loadInput" accept="application/json" style="display:none;">
+    </div>
+  </footer>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  var canvas, ctx, skyWrap;
+  var cw = 0, ch = 0, dpr = 1;
+  var stars = [];
+  var rockets = [];
+  var particles = [];
+  var currentType = 'peony';
+  var autoShowOn = false;
+  var autoAccumulator = 0;
+  var autoInterval = 800;
+  var soundOn = true;
+  var audioCtx = null;
+  var lastTime = 0;
+  var hintEl;
+
+  var isRecording = false;
+  var recordStartTime = 0;
+  var currentRecordingEvents = [];
+  var recording = null;
+
+  var isPlaying = false;
+  var playbackEvents = [];
+  var playbackIndex = 0;
+  var playbackElapsed = 0;
+
+  var toastActive = false;
+  var toastElapsed = 0;
+  var toastDuration = 0;
+
+  var PALETTES = {
+    peony: ['#f4cf65','#d4af37','#ffb347','#fff2c2'],
+    willow: ['#e8e8e8','#ffffff','#c9d6ff','#9fb4ff'],
+    chrysanthemum: ['#5b7fff','#0a3161','#ffffff','#a9c4ff'],
+    ring: ['#b31942','#ff3b5c','#ffffff','#ff8fa3'],
+    palm: ['#d4af37','#ff8a00','#b31942','#fff2c2']
+  };
+
+  function rand(min,max){ return Math.random()*(max-min)+min; }
+  function randInt(min,max){ return Math.floor(rand(min,max+1)); }
+  function pick(arr){ return arr[randInt(0,arr.length-1)]; }
+
+  function init(){
+    canvas = document.getElementById('sky');
+    skyWrap = document.getElementById('skyWrap');
+    hintEl = document.getElementById('hint');
+    if(!canvas || !canvas.getContext){ return; }
+    ctx = canvas.getContext('2d');
+    if(!ctx){ return; }
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('orientationchange', resizeCanvas);
+
+    canvas.addEventListener('pointerdown', handlePointerDown);
+
+    var chips = document.querySelectorAll('.chip');
+    for(var i=0;i<chips.length;i++){
+      chips[i].addEventListener('click', handleChipClick);
+    }
+
+    var autoBtn = document.getElementById('autoBtn');
+    if(autoBtn){ autoBtn.addEventListener('click', toggleAuto); }
+    var soundBtn = document.getElementById('soundBtn');
+    if(soundBtn){ soundBtn.addEventListener('click', toggleSound); }
+    var clearBtn = document.getElementById('clearBtn');
+    if(clearBtn){ clearBtn.addEventListener('click', clearSky); }
+
+    var recordBtn = document.getElementById('recordBtn');
+    if(recordBtn){ recordBtn.addEventListener('click', toggleRecord); }
+    var playBtn = document.getElementById('playBtn');
+    if(playBtn){ playBtn.addEventListener('click', togglePlay); }
+    var saveBtn = document.getElementById('saveBtn');
+    if(saveBtn){ saveBtn.addEventListener('click', saveShow); }
+    var loadBtn = document.getElementById('loadBtn');
+    var loadInput = document.getElementById('loadInput');
+    if(loadBtn && loadInput){
+      loadBtn.addEventListener('click', function(){ loadInput.click(); });
+    }
+    if(loadInput){ loadInput.addEventListener('change', handleLoadFile); }
+
+    loadPrefs();
+    loadRecordingFromStorage();
+    updateSoundButton();
+    updateShowButtons();
+    updateCountdown();
+
+    lastTime = performance.now();
+    requestAnimationFrame(render);
+  }
+
+  function handleChipClick(e){
+    var btn = e.currentTarget;
+    var type = btn.getAttribute('data-type');
+    if(!type){ return; }
+    currentType = type;
+    var chips = document.querySelectorAll('.chip');
+    for(var i=0;i<chips.length;i++){ chips[i].classList.remove('active'); }
+    btn.classList.add('active');
+  }
+
+  function toggleAuto(){
+    autoShowOn = !autoShowOn;
+    var btn = document.getElementById('autoBtn');
+    if(btn){
+      if(autoShowOn){ btn.classList.add('on'); btn.textContent = 'Auto Show: On'; }
+      else { btn.classList.remove('on'); btn.textContent = 'Auto Show: Off'; }
+    }
+    autoAccumulator = 0;
+  }
+
+  function toggleSound(){
+    soundOn = !soundOn;
+    updateSoundButton();
+    savePref('libertyLightsSound', soundOn ? 'on' : 'off');
+  }
+
+  function updateSoundButton(){
+    var btn = document.getElementById('soundBtn');
+    if(!btn){ return; }
+    if(soundOn){ btn.classList.add('on'); btn.textContent = 'Sound: On'; }
+    else { btn.classList.remove('on'); btn.textContent = 'Sound: Off'; }
+  }
+
+  function clearSky(){
+    rockets = [];
+    particles = [];
+    if(ctx){
+      ctx.globalCompositeOperation = 'source-over';
+      paintBaseSky();
+    }
+  }
+
+  function loadPrefs(){
+    try{
+      var v = localStorage.getItem('libertyLightsSound');
+      if(v === 'off'){ soundOn = false; }
+    }catch(err){ /* sandboxed iframe, ignore */ }
+  }
+
+  function savePref(key,val){
+    try{ localStorage.setItem(key,val); }catch(err){ /* ignore */ }
+  }
+
+  function resizeCanvas(){
+    if(!skyWrap || !canvas){ return; }
+    dpr = window.devicePixelRatio || 1;
+    cw = skyWrap.clientWidth;
+    ch = skyWrap.clientHeight;
+    canvas.width = Math.round(cw*dpr);
+    canvas.height = Math.round(ch*dpr);
+    canvas.style.width = cw+'px';
+    canvas.style.height = ch+'px';
+    if(ctx){
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      paintBaseSky();
+    }
+    generateStars();
+  }
+
+  function paintBaseSky(){
+    if(!ctx){ return; }
+    var grad = ctx.createLinearGradient(0,0,0,ch);
+    grad.addColorStop(0,'#04060f');
+    grad.addColorStop(1,'#0d1b3f');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,cw,ch);
+  }
+
+  function generateStars(){
+    stars = [];
+    var count = Math.round((cw*ch)/16000);
+    for(var i=0;i<count;i++){
+      stars.push({
+        x: rand(0,cw),
+        y: rand(0,ch*0.75),
+        r: rand(0.4,1.4),
+        base: rand(0.2,0.6),
+        speed: rand(0.6,1.6)
+      });
+    }
+  }
+
+  function drawStars(t){
+    if(!ctx){ return; }
+    ctx.fillStyle = '#f5f5f0';
+    for(var i=0;i<stars.length;i++){
+      var s = stars[i];
+      var a = s.base + Math.sin(t*0.001*s.speed + i)*0.15;
+      ctx.globalAlpha = Math.max(a,0);
+      ctx.beginPath();
+      ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function handlePointerDown(e){
+    ensureAudio();
+    hideHint();
+    if(!canvas){ return; }
+    var rect = canvas.getBoundingClientRect();
+    var x = e.clientX - rect.left;
+    var y = e.clientY - rect.top;
+    var clampedY = Math.max(30, Math.min(y, ch-20));
+    var clampedX = Math.max(10, Math.min(x, cw-10));
+    var launchType = resolveLaunchType();
+    launchRocket(clampedX, clampedY, launchType);
+    if(isRecording){
+      currentRecordingEvents.push({
+        t: performance.now() - recordStartTime,
+        x: clampedX, y: clampedY, type: launchType
+      });
+    }
+  }
+
+  function resolveLaunchType(){
+    if(currentType === 'random'){
+      var types = ['peony','willow','chrysanthemum','ring','palm'];
+      return Math.random() < 0.16 ? 'salute' : pick(types);
+    }
+    return currentType;
+  }
+
+  function hideHint(){
+    if(hintEl && !hintEl.classList.contains('hidden')){
+      hintEl.classList.add('hidden');
+    }
+  }
+
+  function rocketColor(type){
+    if(type==='ring'){ return '#ff8fa3'; }
+    if(type==='willow'){ return '#dfe8ff'; }
+    if(type==='chrysanthemum'){ return '#a9c4ff'; }
+    if(type==='palm'){ return '#ffcf7a'; }
+    if(type==='salute'){ return '#f4cf65'; }
+    return '#ffe29a';
+  }
+
+  function launchRocket(x,y,type){
+    var startX = x + rand(-14,14);
+    var startY = ch - 4;
+    var dx = x - startX;
+    var dy = y - startY;
+    var dist = Math.hypot(dx,dy) || 1;
+    var speed = 8.2;
+    rockets.push({
+      x:startX, y:startY,
+      vx:(dx/dist)*speed, vy:(dy/dist)*speed,
+      targetY:y, type:type, color:rocketColor(type)
+    });
+    playLaunch();
+  }
+
+  function updateRockets(){
+    for(var i=rockets.length-1;i>=0;i--){
+      var r = rockets[i];
+      r.x += r.vx;
+      r.y += r.vy;
+      drawGlowDot(r.x, r.y, 3.2, r.color);
+      particles.push(makeSparkTrail(r.x, r.y, r.color));
+      if(r.y <= r.targetY || r.y < 24){
+        explode(r.x, r.y, r.type);
+        playBoom();
+        rockets.splice(i,1);
+      }
+    }
+  }
+
+  function makeSparkTrail(x,y,color){
+    return {
+      x:x+rand(-1,1), y:y+rand(-1,1),
+      vx:rand(-0.3,0.3), vy:rand(0.1,0.5),
+      color:color, size:rand(0.8,1.6),
+      alpha:0.7, decay:0.06, gravity:0.02, drag:0.98,
+      sparkle:false, crackle:false, crackleAt:0, crackled:false,
+      flash:false, life:0
+    };
+  }
+
+  function drawGlowDot(x,y,size,color){
+    if(!ctx){ return; }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x,y,size,0,Math.PI*2);
+    ctx.fill();
+  }
+
+  function makeParticle(x,y,angle,speed,color,type){
+    return {
+      x:x, y:y,
+      vx:Math.cos(angle)*speed,
+      vy:Math.sin(angle)*speed,
+      color:color,
+      size:rand(1.4,2.8),
+      alpha:1,
+      decay: type==='willow' ? rand(0.006,0.010) : rand(0.012,0.02),
+      gravity: type==='willow' ? 0.045 : 0.09,
+      drag: type==='willow' ? 0.992 : 0.985,
+      sparkle: (type==='chrysanthemum' || type==='salute'),
+      crackle:false,
+      crackleAt:0,
+      crackled:false,
+      flash:false,
+      life:0
+    };
+  }
+
+  function explode(x,y,type){
+    if(type==='salute'){ createSalute(x,y); return; }
+    if(type==='palm'){ createPalmBurst(x,y); return; }
+    var palette = PALETTES[type] || PALETTES.peony;
+    var count = type==='willow' ? 55 : (type==='ring' ? 60 : 70);
+    for(var i=0;i<count;i++){
+      var angle = (Math.PI*2*i)/count + rand(-0.05,0.05);
+      var speed;
+      if(type==='ring'){ speed = rand(3.6,4.0); }
+      else { speed = rand(1.5, type==='willow' ? 3.0 : 4.2); }
+      var color = pick(palette);
+      particles.push(makeParticle(x,y,angle,speed,color,type));
+    }
+  }
+
+  function createPalmBurst(x,y){
+    var count = 18;
+    for(var i=0;i<count;i++){
+      var angle = -Math.PI/2 + rand(-0.6,0.6);
+      var speed = rand(3.5,5.5);
+      var p = makeParticle(x,y,angle,speed,pick(PALETTES.palm),'palm');
+      p.crackle = true;
+      p.crackleAt = randInt(18,34);
+      p.gravity = 0.07;
+      p.decay = 0.006;
+      particles.push(p);
+    }
+  }
+
+  function spawnRing(x,y,count,speed,color,gravity,decay,sparkle){
+    for(var i=0;i<count;i++){
+      var angle = (Math.PI*2*i)/count + rand(-0.03,0.03);
+      var s = speed*rand(0.85,1.15);
+      var p = makeParticle(x,y,angle,s,color,'salute');
+      p.gravity = gravity;
+      p.decay = decay;
+      p.sparkle = sparkle;
+      particles.push(p);
+    }
+  }
+
+  function createSalute(x,y){
+    spawnRing(x,y,40,4.2,'#b31942',0.05,0.014,false);
+    spawnRing(x,y,30,3.2,'#f5f5f0',0.05,0.014,false);
+    spawnRing(x,y,22,2.2,'#0a3161',0.05,0.014,false);
+    spawnRing(x,y,13,5.0,'#f4cf65',0.035,0.008,true);
+    particles.push({
+      x:x, y:y, vx:0, vy:0, color:'#ffffff', size:16, alpha:1,
+      decay:0.07, gravity:0, drag:1, sparkle:false, crackle:false,
+      crackleAt:0, crackled:false, flash:true, life:0
+    });
+  }
+
+  function updateParticles(){
+    for(var i=particles.length-1;i>=0;i--){
+      var p = particles[i];
+      p.vx *= p.drag;
+      p.vy = p.vy*p.drag + p.gravity;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.alpha -= p.decay;
+      p.life += 1;
+
+      if(p.crackle && !p.crackled && p.life >= p.crackleAt){
+        crackleBurst(p.x,p.y);
+        p.crackled = true;
+        p.alpha = 0;
+      }
+
+      if(p.alpha <= 0){
+        particles.splice(i,1);
+        continue;
+      }
+
+      var drawAlpha = p.alpha;
+      if(p.sparkle && Math.sin(p.life*0.9) > 0.6){
+        drawAlpha = Math.min(1, p.alpha*1.6);
+      }
+      ctx.globalAlpha = Math.max(drawAlpha,0);
+      ctx.fillStyle = p.color;
+      var radius = p.flash ? Math.max(p.size*(1-p.life*0.08),0.1) : p.size;
+      if(radius>0){
+        ctx.beginPath();
+        ctx.arc(p.x,p.y,radius,0,Math.PI*2);
+        ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function crackleBurst(x,y){
+    var count = 8;
+    for(var i=0;i<count;i++){
+      var angle = rand(0,Math.PI*2);
+      var speed = rand(1.0,2.4);
+      var p = makeParticle(x,y,angle,speed,pick(PALETTES.palm),'palm');
+      p.decay = 0.035;
+      p.gravity = 0.05;
+      particles.push(p);
+    }
+  }
+
+  function runAutoShow(dt){
+    if(!autoShowOn){ return; }
+    autoAccumulator += dt;
+    if(autoAccumulator >= autoInterval){
+      autoAccumulator = 0;
+      autoInterval = rand(500,1200);
+      ensureAudio();
+      var types = ['peony','willow','chrysanthemum','ring','palm'];
+      var type = Math.random() < 0.16 ? 'salute' : pick(types);
+      var x = rand(cw*0.12, cw*0.88);
+      var y = rand(ch*0.18, ch*0.55);
+      launchRocket(x,y,type);
+    }
+  }
+
+  function toggleRecord(){
+    if(isRecording){
+      isRecording = false;
+      if(currentRecordingEvents.length > 0){
+        recording = { events: currentRecordingEvents.slice(), version:1 };
+        saveRecordingToStorage(recording);
+        showToast('Show saved: ' + currentRecordingEvents.length + ' shots recorded', 2400);
+      } else {
+        showToast('No shots recorded', 1800);
+      }
+      updateRecordButton();
+      updateShowButtons();
+    } else {
+      if(autoShowOn){ toggleAuto(); }
+      if(isPlaying){ isPlaying = false; updatePlayButton(); }
+      isRecording = true;
+      currentRecordingEvents = [];
+      recordStartTime = performance.now();
+      updateRecordButton();
+      showToast('Recording\u2026 tap the sky', 2000);
+    }
+  }
+
+  function updateRecordButton(){
+    var btn = document.getElementById('recordBtn');
+    if(!btn){ return; }
+    if(isRecording){ btn.classList.add('on'); btn.textContent = '\u25a0 Stop Recording'; }
+    else { btn.classList.remove('on'); btn.textContent = '\u25cf Record Show'; }
+  }
+
+  function togglePlay(){
+    if(isPlaying){
+      isPlaying = false;
+      updatePlayButton();
+      return;
+    }
+    if(!recording || !recording.events || recording.events.length === 0){
+      showToast('No show to play yet', 1800);
+      return;
+    }
+    if(autoShowOn){ toggleAuto(); }
+    if(isRecording){ isRecording = false; updateRecordButton(); }
+    ensureAudio();
+    playbackEvents = recording.events;
+    playbackIndex = 0;
+    playbackElapsed = 0;
+    isPlaying = true;
+    updatePlayButton();
+    showToast('Playing show', 1600);
+  }
+
+  function updatePlayButton(){
+    var btn = document.getElementById('playBtn');
+    if(!btn){ return; }
+    if(isPlaying){ btn.classList.add('on'); btn.textContent = '\u25a0 Stop'; }
+    else { btn.classList.remove('on'); btn.textContent = '\u25b6 Play Show'; }
+  }
+
+  function runPlayback(dt){
+    if(!isPlaying){ return; }
+    playbackElapsed += dt;
+    while(playbackIndex < playbackEvents.length && playbackEvents[playbackIndex].t <= playbackElapsed){
+      var ev = playbackEvents[playbackIndex];
+      launchRocket(ev.x, ev.y, ev.type);
+      playbackIndex += 1;
+    }
+    if(playbackIndex >= playbackEvents.length){
+      isPlaying = false;
+      updatePlayButton();
+    }
+  }
+
+  function saveShow(){
+    if(!recording || !recording.events || recording.events.length === 0){
+      showToast('No show recorded yet', 1800);
+      return;
+    }
+    try{
+      var json = JSON.stringify(recording);
+      var blob = new Blob([json], {type:'application/json'});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'liberty-lights-show-' + formatDateStamp(new Date()) + '.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Show file downloaded', 1800);
+    }catch(err){
+      showToast('Could not save file', 1800);
+    }
+  }
+
+  function handleLoadFile(e){
+    var file = e.target.files && e.target.files[0];
+    if(!file){ return; }
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      try{
+        var data = JSON.parse(ev.target.result);
+        if(data && data.events && data.events.length){
+          recording = data;
+          saveRecordingToStorage(recording);
+          updateShowButtons();
+          showToast('Show loaded: ' + data.events.length + ' shots', 2000);
+        } else {
+          showToast('That file is not a valid show', 2000);
+        }
+      }catch(err){
+        showToast('Could not read that file', 2000);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }
+
+  function formatDateStamp(d){
+    var y = d.getFullYear();
+    var m = ('0'+(d.getMonth()+1)).slice(-2);
+    var day = ('0'+d.getDate()).slice(-2);
+    return y+'-'+m+'-'+day;
+  }
+
+  function updateShowButtons(){
+    var hasShow = !!(recording && recording.events && recording.events.length > 0);
+    var playBtn = document.getElementById('playBtn');
+    var saveBtn = document.getElementById('saveBtn');
+    if(playBtn){ playBtn.disabled = !hasShow; }
+    if(saveBtn){ saveBtn.disabled = !hasShow; }
+  }
+
+  function saveRecordingToStorage(rec){
+    try{ localStorage.setItem('libertyLightsShow', JSON.stringify(rec)); }catch(err){ /* ignore */ }
+  }
+
+  function loadRecordingFromStorage(){
+    try{
+      var raw = localStorage.getItem('libertyLightsShow');
+      if(raw){
+        var data = JSON.parse(raw);
+        if(data && data.events && data.events.length){ recording = data; }
+      }
+    }catch(err){ /* ignore */ }
+  }
+
+  function showToast(text, duration){
+    if(!hintEl){ return; }
+    hintEl.textContent = text;
+    hintEl.classList.remove('hidden');
+    toastActive = true;
+    toastElapsed = 0;
+    toastDuration = duration;
+  }
+
+  function ensureAudio(){
+    if(audioCtx){ return; }
+    try{
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if(AC){ audioCtx = new AC(); }
+    }catch(err){ audioCtx = null; }
+  }
+
+  function playLaunch(){
+    if(!soundOn || !audioCtx){ return; }
+    try{
+      var t = audioCtx.currentTime;
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(900,t);
+      osc.frequency.exponentialRampToValueAtTime(220,t+0.3);
+      gain.gain.setValueAtTime(0.0001,t);
+      gain.gain.exponentialRampToValueAtTime(0.16,t+0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001,t+0.32);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t+0.34);
+    }catch(err){ /* ignore */ }
+  }
+
+  function playBoom(){
+    if(!soundOn || !audioCtx){ return; }
+    try{
+      var t = audioCtx.currentTime;
+      var bufferSize = Math.round(audioCtx.sampleRate*0.4);
+      var buffer = audioCtx.createBuffer(1,bufferSize,audioCtx.sampleRate);
+      var data = buffer.getChannelData(0);
+      for(var i=0;i<bufferSize;i++){
+        data[i] = (Math.random()*2-1) * Math.pow(1-i/bufferSize,2);
+      }
+      var noise = audioCtx.createBufferSource();
+      noise.buffer = buffer;
+      var filter = audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(1100,t);
+      filter.frequency.exponentialRampToValueAtTime(80,t+0.4);
+      var gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(0.32,t);
+      gain.gain.exponentialRampToValueAtTime(0.0001,t+0.4);
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+      noise.start(t);
+    }catch(err){ /* ignore */ }
+  }
+
+  function updateCountdown(){
+    var el = document.getElementById('countdownBadge');
+    if(!el){ return; }
+    var target = new Date(2026,6,4,0,0,0);
+    var now = new Date();
+    var diffMs = target.getTime() - now.getTime();
+    var oneDay = 86400000;
+    if(diffMs > oneDay){
+      var days = Math.ceil(diffMs/oneDay);
+      el.textContent = '\u2605 T-minus ' + days + ' days to USA 250';
+    } else if(diffMs > 0){
+      el.textContent = '\u2605 America turns 250 tomorrow';
+    } else if(diffMs > -oneDay){
+      el.textContent = '\u2605 Happy 250th Birthday, America';
+    } else {
+      el.textContent = '\u2605 Celebrating America\u2019s 250th';
+    }
+  }
+
+  function render(now){
+    if(!ctx){ requestAnimationFrame(render); return; }
+    try{
+      var dt = now - lastTime;
+      lastTime = now;
+      if(dt > 100){ dt = 100; }
+
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = 'rgba(4,7,18,0.20)';
+      ctx.fillRect(0,0,cw,ch);
+      drawStars(now);
+
+      ctx.globalCompositeOperation = 'lighter';
+      updateRockets();
+      updateParticles();
+      ctx.globalCompositeOperation = 'source-over';
+
+      runAutoShow(dt);
+      runPlayback(dt);
+
+      if(toastActive){
+        toastElapsed += dt;
+        if(toastElapsed >= toastDuration){
+          toastActive = false;
+          if(hintEl){ hintEl.classList.add('hidden'); }
+        }
+      }
+    }catch(err){
+      console.error('render error', err);
+    }
+    requestAnimationFrame(render);
+  }
+
+  window.addEventListener('load', init);
+})();
+</script>
+</body>
+</html>
